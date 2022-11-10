@@ -1,0 +1,183 @@
+package com.montoyaramirezluis.pmdm_android_pasar_informacion_entre_activities;
+
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.Toast;
+
+public class MainActivity extends AppCompatActivity {
+
+    // Para pasar información de un activity a otra:
+    // Usando el objeto Bundle. Se puede usar directamente el Intent, pero por unificar usamos
+    // únicamente el Bundle.
+    //
+    // Para recoger información hay dos formas:
+    // 1. Usando starActivityForResult(). Esta forma está DEPRECADA. Dejará de funcionar en el futuro.
+    // 2. Utilizando ActivityResultLauncher. Es compleja pero válida. (se recomienda en algunos sitios)
+    // 3. Utilizando el objeto Application. Se utiliza globalmente a todas las activities. Pasos:
+    //      3.1. Crear un objeto myApplication que herede de Application. Añadir las propiedades que
+    //           queramos compartir entre activities.
+    //      3.2. En el AndroidManifest.xml, añadir la propiedad android:name=".MyApplication" en el
+    //          tag <application>
+    //      3.3. En el activity que queramos pasar información, crear un objeto de la clase MyApplication
+    //          y acceder a las propiedades que queramos compartir.
+    //          Ejemplo: MyApplication myApplication = (MyApplication) getApplicationContext();
+    //                   mApplication.getLista().add(new Cliente(1, "Luis"));
+
+    // Por si necesitamos saber de qué activity vienen los datos
+    private final int REQUESTCODE_SECOND_ACTIVITY = 1;
+    private final int REQUESTCODE_THIRD_ACTIVITY = 2;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        // Cargamos los datos que vamos a pasar por serialización de una actividad a otra
+        Clientes clientes = new Clientes(); // creamos un objeto de la clase Clientes
+        clientes.cargar(); // cargamos datos predefinidos para esta prueba
+
+        // Esta primera forma es utilizando startActivityForResult(). Esta forma está DEPRECADA.
+        Button b1 = findViewById(R.id.bOpcion1);
+        // b1.setOnClickListener(b1OnClick(clientes));
+        b1OnClick(b1, clientes);
+
+        // Segunda forma, utilizando un ActivityResultLauncher. Hay que crear un objeto de la clase
+        // ActivityResultLauncher y configurarlo.
+        Button b2 = findViewById(R.id.bOpcion2);
+        b2.setOnClickListener(b2OnClick(clientes));
+
+        // Tercera forma, utilizando el objeto Application. Se utiliza globalmente a todas las activities.
+        // creo que es la que mas me gusta.
+        Button b3 = findViewById(R.id.bOpcion3);
+        b3.setOnClickListener(b3OnClick());
+    }
+
+    private void b1OnClick(Button b1, Clientes clientes) {
+        b1.setOnClickListener(view -> {
+            Intent intent = new Intent(getApplicationContext(), SegundaActivity.class);
+
+            // Cargamos el Bundle con con la información que queremos pasar
+            // Podemos pasar tipos básicos: int, float, double, String, etc. con bundle.putXXX()
+            // Tambien podemos pasar objetos de clases que implementen Serializable con bundle.putSerializable()
+            // NOTA. Es necesario que el objeto y todos los objetos que utilice implementen la interfaz Serializable
+            Bundle bundle = new Bundle();
+            bundle.putString("key_string", "Opcion 1");
+            bundle.putInt("key_int", 120);
+            bundle.putDouble("key_double", 3.141592);
+            bundle.putBoolean("key_boolean", true);
+
+            // podemos pasar un objeto con bundle.putSerializable()
+            bundle.putSerializable("key_clientes", clientes);
+
+            // cargamos el bundle en el intent
+            intent.putExtras(bundle);
+
+            // Lanzamos la nueva activity
+            startActivityForResult(intent, REQUESTCODE_SECOND_ACTIVITY);
+
+        });
+
+    }
+
+
+
+
+
+    // Método para el botón bOpcion1
+    /* private View.OnClickListener b1OnClick(Clientes clientes) {
+        return v -> {
+            Intent intent = new Intent(getApplicationContext(), SegundaActivity.class);
+
+            // Cargamos el Bundle con con la información que queremos pasar
+            // Podemos pasar tipos básicos: int, float, double, String, etc. con bundle.putXXX()
+            // Tambien podemos pasar objetos de clases que implementen Serializable con bundle.putSerializable()
+            // NOTA. Es necesario que el objeto y todos los objetos que utilice implementen la interfaz Serializable
+            Bundle bundle = new Bundle();
+            bundle.putString("key_string", "Opcion 1");
+            bundle.putInt("key_int", 120);
+            bundle.putDouble("key_double", 3.141592);
+            bundle.putBoolean("key_boolean", true);
+
+            // podemos pasar un objeto con bundle.putSerializable()
+            bundle.putSerializable("key_clientes", clientes);
+
+            // cargamos el bundle en el intent
+            intent.putExtras(bundle);
+
+            // Lanzamos la nueva activity
+            startActivityForResult(intent, REQUESTCODE_SECOND_ACTIVITY);
+        };
+    }*/
+
+    // Método para el botón bOpcion2
+    private View.OnClickListener b2OnClick(Clientes clientes) {
+        return v -> {
+            Intent intent = new Intent(getApplicationContext(), SegundaActivity.class);
+
+            // Cargamos el Bundle con la información que queremos pasar
+            // Podemos pasar tipos básicos: int, float, double, String, etc. con bundle.putXXX()
+            Bundle bundle = new Bundle(); // creamos un objeto de la clase Bundle
+            bundle.putString("key_string", "Opcion 2"); // añadimos un String
+            bundle.putInt("key_int", 120); // añadimos un int
+            bundle.putDouble("key_double", 3.141592); // añadimos un double
+            bundle.putBoolean("key_boolean", true); // añadimos un boolean
+
+            // podemos pasar un objeto con bundle.putSerializable()
+            bundle.putSerializable("key_clientes", clientes);
+
+            // cargamos el bundle en el intent
+            intent.putExtras(bundle);
+
+            // Asociamos el Intent (ya sabe que Activity abrir) al lanzador
+            lanzador.launch(intent); // tenemos que crear un objeto de la clase ActivityResultLauncher como variable de clase
+        };
+    }
+
+    // Método para el botón bOpcion3
+    private View.OnClickListener b3OnClick() {
+        return new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), TerceraActivity.class);
+
+                // Lanzamos la nueva activity
+                startActivityForResult(intent, REQUESTCODE_THIRD_ACTIVITY);
+            }
+        };
+    }
+
+    // Creamos un objeto de la clase ActivityResultLauncher
+    ActivityResultLauncher<Intent> lanzador = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    // Recogemos la información y generamos un objeto Bundle.
+                    // Y leemos cada clave usando el getXXX correspondiente.
+                    Bundle bundle = null; // obtenemos el Bundle
+                    if (result.getData() != null) {
+                        bundle = result.getData().getExtras();
+                    }
+                    String resultado = null; // obtenemos el String
+                    if (bundle != null) {
+                        resultado = bundle.getString("return");
+                    }
+
+                    // También podemos recoger un objeto con bundle.getSerializable()
+                    Clientes clientes = (Clientes) bundle.getSerializable("return_clientes");
+
+                    // Mostramos el resultado
+                    Toast.makeText(getApplicationContext(), "Opcion 2: " + resultado, Toast.LENGTH_SHORT).show();
+
+                    // Vemos como la lista de objetos cliente ha sido modificada en la segunda activity
+                    Toast.makeText(getApplicationContext(), "Elementos lista: " + clientes.getLista(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "Elemento 0: " + clientes.getLista().get(0).getNombre(), Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
+}
